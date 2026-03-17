@@ -9,6 +9,11 @@ goldbachPairs n
   where
     primes = primesTo n
 
+-- Task 2
+
+coprimePairs :: [Int] -> [(Int, Int)]
+coprimePairs list = [(x, y) | x <- list, y <- list, x < y, gcd x y == 1]
+
 -- Task 3
 
 primesTo :: Int -> [Int]
