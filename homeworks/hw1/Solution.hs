@@ -1,5 +1,14 @@
 module HW where
 
+-- Task 1
+
+goldbachPairs :: Int -> [(Int, Int)]
+goldbachPairs n
+  | n < 4 = []
+  | otherwise = [(p, q) | p <- primes, q <- primes, p + q == n, p <= q]
+  where
+    primes = primesTo n
+
 -- Task 3
 
 primesTo :: Int -> [Int]
