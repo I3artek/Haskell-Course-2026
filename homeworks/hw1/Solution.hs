@@ -59,3 +59,13 @@ pairmutations n list = [p | smallerp@(ps, ns) <- smaller, p <- concat (applyToEa
 permutations :: Int -> [a] -> [[a]]
 permutations 0 _ = [[]]
 permutations n list = map (\(x, y) -> x) (pairmutations n list)
+
+-- Task 6
+
+merge :: (Ord a) => [a] -> [a] -> [a]
+merge [] list = list
+merge list [] = list
+merge (x : xs) (y : ys)
+  | x == y = merge xs (y : ys)
+  | x < y = x : merge xs (y : ys)
+  | x > y = y : merge (x : xs) ys
