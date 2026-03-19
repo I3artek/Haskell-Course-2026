@@ -72,3 +72,15 @@ merge (x : xs) (y : ys)
   | x == y = merge xs (y : ys)
   | x < y = x : merge xs (y : ys)
   | x > y = y : merge (x : xs) ys
+
+-- Task 7
+
+power :: Int -> Int -> Int
+power 0 _ = 0
+power 1 _ = 1
+power _ 0 = 1
+power b 1 = b
+power b e = go 1 e
+  where
+    go acc 0 = acc
+    go !acc n = go (acc * b) (n - 1)
