@@ -31,7 +31,7 @@ isPrime n = elem n (primesTo n)
 
 -- Task 5
 
--- Let's define a nice helper
+-- Let's define a nice helper, that applies it to each x from a list and the rest of the list
 applyToEachWithRest :: (a -> [a] -> [[b]]) -> [a] -> [[b]]
 applyToEachWithRest _ [] = []
 applyToEachWithRest f (x : xs) = go [] (x : xs)
@@ -39,6 +39,7 @@ applyToEachWithRest f (x : xs) = go [] (x : xs)
     go used [] = []
     go used (x : xs) = (f x (used ++ xs)) ++ (go (used ++ [x]) xs)
 
+-- This produces list of lists with x inserted in every possible place
 insertions :: a -> [a] -> [[a]]
 insertions x [] = [[x]]
 insertions y (x : xs) = go [] (x : xs)
@@ -49,6 +50,8 @@ insertions y (x : xs) = go [] (x : xs)
 getElAndRest :: a -> [a] -> [[([a], [a])]]
 getElAndRest x xs = [[([x], xs)]]
 
+-- This generates list of pairs, where the fist element is one permutation of size k
+-- And the other is a list of elements not used in this permutation (rest of the list)
 pairmutations :: Int -> [a] -> [([a], [a])]
 pairmutations 0 list = [([], list)]
 pairmutations 1 list = concat (applyToEachWithRest getElAndRest list)
