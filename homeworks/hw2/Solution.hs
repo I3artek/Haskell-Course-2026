@@ -33,3 +33,16 @@ instance Semigroup (Sequence a) where
 
 instance Monoid (Sequence a) where
   mempty = Empty
+
+-- Task 4
+
+tailElem :: (Eq a) => a -> Sequence a -> Bool
+tailElem _ Empty = False
+tailElem x (Single y) = x == y
+tailElem x ys = go ys []
+  where
+    go Empty (s : tack) = go s tack
+    go Empty [] = False
+    go (Single y) (s : tack) = (y == x) || go s tack
+    go (Single y) [] = y == x
+    go (Append ys zs) stack = go ys (zs : stack)
