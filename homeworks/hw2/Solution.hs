@@ -100,3 +100,14 @@ myTakeWhile p = foldr (\x l -> if p x then x : l else []) []
 
 decimal :: [Int] -> Int
 decimal = foldl (\s e -> s * 10 + e) 0
+
+-- Task 7
+countOrAdd :: (Eq a) => a -> [(a, Int)] -> [(a, Int)]
+countOrAdd x [] = [(x, 1)]
+countOrAdd x (e@(y, c) : es) = if x == y then (y, c + 1) : es else (x, 1) : e : es
+
+encode :: (Eq a) => [a] -> [(a, Int)]
+encode = foldr countOrAdd []
+
+decode :: [(a, Int)] -> [a]
+decode = foldr (\(e, c) l -> (replicate c e) ++ l) []
