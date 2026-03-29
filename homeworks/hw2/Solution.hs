@@ -87,3 +87,16 @@ tailRPN list = go list []
     go ((TNum x) : os) stack = go os (x : stack)
     go [] [x] = Just x
     go _ _ = Nothing
+
+-- Task 6
+
+-- foldl :: Foldable t => (b -> a -> b) -> b -> t a -> b
+-- foldr :: Foldable t => (a -> b -> b) -> b -> t a -> b
+myReverse :: [a] -> [a]
+myReverse list = foldl (\l e -> e : l) [] list
+
+myTakeWhile :: (a -> Bool) -> [a] -> [a]
+myTakeWhile p = foldr (\x l -> if p x then x : l else []) []
+
+decimal :: [Int] -> Int
+decimal = foldl (\s e -> s * 10 + e) 0
