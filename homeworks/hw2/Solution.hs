@@ -11,3 +11,17 @@ instance Functor Sequence where
   fmap _ Empty = Empty
   fmap f (Single x) = Single (f x)
   fmap f (Append x y) = Append (f <$> x) (f <$> y)
+
+-- Task 2
+
+instance Foldable Sequence where
+  foldMap _ Empty = mempty
+  foldMap f (Single x) = f x
+  foldMap f (Append x y) = foldMap f x <> foldMap f y
+
+-- I'm not sure what library function should I use for these
+seqToList :: Sequence a -> [a]
+seqToList = foldMap (: [])
+
+seqLength :: Sequence a -> Int
+seqLength = length
