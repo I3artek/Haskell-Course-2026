@@ -25,3 +25,11 @@ seqToList = foldMap (: [])
 
 seqLength :: Sequence a -> Int
 seqLength = length
+
+-- Task 3
+
+instance Semigroup (Sequence a) where
+  (<>) = Append
+
+instance Monoid (Sequence a) where
+  mempty = Empty
