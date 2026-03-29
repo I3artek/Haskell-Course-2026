@@ -56,3 +56,15 @@ tailElem2 x ys = go ys []
     go (Single y) (s : tack) = (y == x) || go s tack
     go (Append ys zs) stack = go ys (zs : stack)
     go s [] = tailElem2 x s
+
+-- Task 5
+
+tailToList :: Sequence a -> [a]
+tailToList Empty = []
+tailToList (Single x) = [x]
+tailToList ys = go ys []
+  where
+    go Empty (s : tack) = go s tack
+    go (Single x) (s : tack) = x : go s tack
+    go (Append ys zs) stack = go ys (zs : stack)
+    go s [] = tailToList s
