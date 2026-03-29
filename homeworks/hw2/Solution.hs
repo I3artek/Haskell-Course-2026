@@ -46,3 +46,13 @@ tailElem x ys = go ys []
     go (Single y) (s : tack) = (y == x) || go s tack
     go (Single y) [] = y == x
     go (Append ys zs) stack = go ys (zs : stack)
+
+tailElem2 :: (Eq a) => a -> Sequence a -> Bool
+tailElem2 _ Empty = False
+tailElem2 x (Single y) = x == y
+tailElem2 x ys = go ys []
+  where
+    go Empty (s : tack) = go s tack
+    go (Single y) (s : tack) = (y == x) || go s tack
+    go (Append ys zs) stack = go ys (zs : stack)
+    go s [] = tailElem2 x s
