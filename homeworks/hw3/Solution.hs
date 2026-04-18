@@ -79,3 +79,46 @@ seatings guests conflicts = Prelude.map snd (go [] guests)
       guard ((first, next) `notElem` conflicts)
       guard ((next, first) `notElem` conflicts)
       go [(g, next : first : rest)] (Prelude.filter (/= next) guests)
+
+-- Task 4
+
+data Result a = Failure String | Success a [String] deriving (Show)
+
+instance Functor Result where
+  fmap :: (a -> b) -> Result a -> Result b
+  fmap _ (Failure msg) = Failure msg
+  fmap f (Success val warns) = Success (f val) warns
+
+instance Applicative Result where
+  pure val = Success val []
+  liftA2 :: (a -> b -> c) -> Result a -> Result b -> Result c
+  liftA2 _ (Failure msg) _ = Failure msg
+  liftA2 _ _ (Failure msg) = Failure msg
+  liftA2 f (Success vA warnA) (Success vB warnB) =
+    Success (f vA vB) (warnA ++ warnB)
+
+instance Monad Result where
+  (>>=) :: Result a -> (a -> Result b) -> Result b
+  (Failure msg) >>= _ = Failure msg
+  (Success x warnx) >>= f = liftA2 (\_ y -> y) (Success x warnx) (f x)
+
+warn :: String -> Result ()
+warn msg = Success () [msg]
+
+failure :: String -> Result a
+failure = Failure
+
+validateAge :: Int -> Result Int
+validateAge age
+  | age > 150 = do
+      warn "Age above 150"
+      return age
+  | age < 0 = do
+      failure "Age below 0"
+  | otherwise = do
+      return age
+
+-- This reports a failure when one of the ages fails. That was the intention of
+-- the task, right? I wasn't 100% sure from the description.
+validateAges :: [Int] -> Result [Int]
+validateAges = mapM validateAge
