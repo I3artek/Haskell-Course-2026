@@ -27,3 +27,19 @@ safePath maze pos (d : irs) = do
   next <- move maze pos d
   rest <- safePath maze next irs
   return (pos : rest)
+
+-- Task 2
+
+type Key = Map Char Char
+
+decrypt :: Key -> String -> Maybe String
+decrypt key = traverse decode
+  where
+    decode c = do
+      key !? c
+
+decryptWords :: Key -> [String] -> Maybe [String]
+decryptWords key = traverse decode
+  where
+    decode string = do
+      decrypt key string
