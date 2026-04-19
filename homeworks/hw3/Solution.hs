@@ -1,6 +1,7 @@
 module HW where
 
 import Control.Monad (guard)
+import Control.Monad.Writer
 import Data.Map
 
 -- Task 1
@@ -122,3 +123,56 @@ validateAge age
 -- the task, right? I wasn't 100% sure from the description.
 validateAges :: [Int] -> Result [Int]
 validateAges = mapM validateAge
+
+-- Task 5
+
+data Expr = Lit Int | Add Expr Expr | Mul Expr Expr | Neg Expr
+
+instance Show Expr where
+  show (Lit a) = show a
+  show (Add x y) = "(" ++ show x ++ " + " ++ show y ++ ")"
+  show (Mul x y) = "(" ++ show x ++ " * " ++ show y ++ ")"
+  show (Neg x) = "(-" ++ show x ++ ")"
+
+simplify :: Expr -> Writer [String] Expr
+simplify (Lit a) = do
+  return (Lit a)
+simplify (Add (Lit 0) e) = do
+  tell ["Add identity: 0 + " ++ show e ++ " -> " ++ show e]
+  return e
+simplify (Add e (Lit 0)) = do
+  tell ["Add identity: " ++ show e ++ " + 0 -> " ++ show e]
+  return e
+simplify (Mul (Lit 1) e) = do
+  tell ["Mul identity: 1 * " ++ show e ++ " -> " ++ show e]
+  return e
+simplify (Mul e (Lit 1)) = do
+  tell ["Mul identity: " ++ show e ++ " * 1 -> " ++ show e]
+  return e
+simplify t@(Mul (Lit 0) e) = do
+  tell ["Zero absorption: " ++ show t ++ " -> 0"]
+  return $ Lit 0
+simplify t@(Mul e (Lit 0)) = do
+  tell ["Zero absorption: " ++ show t ++ " -> 0"]
+  return $ Lit 0
+simplify t@(Neg (Neg e)) = do
+  tell ["Double negation: " ++ show t ++ " -> " ++ show e]
+  return e
+simplify t@(Add (Lit a) (Lit b)) = do
+  tell ["Constant folding: " ++ show t ++ " -> " ++ show (a + b)]
+  return (Lit (a + b))
+simplify t@(Mul (Lit a) (Lit b)) = do
+  tell ["Constant folding: " ++ show t ++ " -> " ++ show (a * b)]
+  return (Lit (a * b))
+simplify (Add x y) = do
+  let (sx, logx) = runWriter (simplify x)
+      (sy, logy) = runWriter (simplify y)
+  tell logx
+  tell logy
+  simplify (Add sx sy)
+simplify (Mul x y) = do
+  let (sx, logx) = runWriter (simplify x)
+      (sy, logy) = runWriter (simplify y)
+  tell logx
+  tell logy
+  simplify (Mul sx sy)
