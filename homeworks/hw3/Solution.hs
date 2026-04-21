@@ -176,3 +176,28 @@ simplify (Mul x y) = do
   tell logx
   tell logy
   simplify (Mul sx sy)
+
+-- Task 6
+
+newtype ZipList a = ZipList {getZipList :: [a]} deriving (Show, Eq)
+
+instance Functor ZipList where
+  fmap :: (a -> b) -> ZipList a -> ZipList b
+  fmap g list = ZipList (Prelude.map g (getZipList list))
+
+instance Applicative ZipList where
+  pure x = let xs = x : xs in ZipList xs
+  (<*>) :: ZipList (a -> b) -> ZipList a -> ZipList b
+  (ZipList lgs) <*> (ZipList lxs) = ZipList (go lgs lxs)
+    where
+      go :: [a -> b] -> [a] -> [b]
+      go _ [] = []
+      go [] _ = []
+      go (g : gs) (x : xs) = g x : go gs xs
+
+-- requested checks provided in an easy to digest form
+task6B1 = (pure id <*> ZipList [1, 2, 3]) == ZipList [1, 2, 3]
+
+task6B2 =
+  (pure (+) <*> ZipList [1, 2, 3] <*> ZipList [10, 20, 30])
+    == ZipList [11, 22, 33]
