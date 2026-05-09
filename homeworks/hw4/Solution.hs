@@ -1,6 +1,6 @@
 module HW where
 
-newtype Reader r a = Reader { runReader :: r -> a }
+newtype Reader r a = Reader {runReader :: r -> a}
 
 -- Task 1
 
@@ -21,3 +21,14 @@ instance Monad (Reader r) where
   readerA >>= f = Reader go
     where
       go r = runReader (f (runReader readerA r)) r
+
+-- Task 2
+
+ask :: Reader r r
+ask = Reader id
+
+asks :: (r -> a) -> Reader r a
+asks = Reader
+
+local :: (r -> r) -> Reader r a -> Reader r a
+local f r = Reader (runReader r . f)
