@@ -4,46 +4,29 @@ import Control.Monad.State
 
 data Instr = PUSH Int | POP | DUP | SWAP | ADD | MUL | NEG
 
-popTwo :: [Int] -> (Maybe (Int, Int), [Int])
-popTwo (x1 : (x2 : xs)) = (Just (x1, x2), xs)
-popTwo list = (Nothing, list)
+pop2Apply :: (Int -> Int -> [Int]) -> State [Int] ()
+pop2Apply f = do
+  stack <- get
+  case stack of
+    (x1 : (x2 : xs)) -> put (f x1 x2 ++ xs)
+    _ -> return ()
+
+pop1Apply :: (Int -> [Int]) -> State [Int] ()
+pop1Apply f = do
+  stack <- get
+  case stack of
+    (x : xs) -> put (f x ++ xs)
+    _ -> return ()
 
 execInstr :: Instr -> State [Int] ()
 execInstr i = case i of
   PUSH x -> modify (x :)
-  POP -> do
-    stack <- get
-    case stack of
-      [] -> return ()
-      (x : xs) -> put xs
-  DUP -> do
-    stack <- get
-    case stack of
-      [] -> return ()
-      (x : xs) -> put (x : x : xs)
-  SWAP -> do
-    stack <- get
-    let (maybeXs, rest) = popTwo stack
-    case maybeXs of
-      Nothing -> return ()
-      Just (x1, x2) -> put (x2 : x1 : rest)
-  ADD -> do
-    stack <- get
-    let (maybeXs, rest) = popTwo stack
-    case maybeXs of
-      Nothing -> return ()
-      Just (x1, x2) -> put ((x1 + x2) : rest)
-  MUL -> do
-    stack <- get
-    let (maybeXs, rest) = popTwo stack
-    case maybeXs of
-      Nothing -> return ()
-      Just (x1, x2) -> put ((x1 * x2) : rest)
-  NEG -> do
-    stack <- get
-    case stack of
-      [] -> return ()
-      (x : xs) -> put ((-x) : xs)
+  POP -> pop1Apply $ const []
+  DUP -> pop1Apply $ \x -> [x, x]
+  SWAP -> pop2Apply (\x y -> [y, x])
+  ADD -> pop2Apply (\x y -> [x + y])
+  MUL -> pop2Apply (\x y -> [x * y])
+  NEG -> pop1Apply (\x -> [-x])
 
 execProg :: [Instr] -> State [Int] ()
 execProg [] = return ()
