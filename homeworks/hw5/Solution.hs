@@ -1,6 +1,9 @@
 module HW where
 
 import Control.Monad.State
+import Data.Map
+
+-- Task 1
 
 data Instr = PUSH Int | POP | DUP | SWAP | ADD | MUL | NEG
 
@@ -36,3 +39,42 @@ execProg (x : xs) = do
 
 runProg :: [Instr] -> [Int]
 runProg program = execState (execProg program) []
+
+-- Task 2
+
+data Expr
+  = Num Int
+  | Var String
+  | Add Expr Expr
+  | Mul Expr Expr
+  | Neg Expr
+  | Assign String Expr
+  | Seq Expr Expr
+
+eval :: Expr -> State (Map String Int) Int
+eval e = case e of
+  Num x -> return x
+  Var name -> do
+    map <- get
+    return $ map ! name
+  Add e1 e2 -> do
+    x <- eval e1
+    y <- eval e2
+    return $ x + y
+  Mul e1 e2 -> do
+    x <- eval e1
+    y <- eval e2
+    return $ x * y
+  Neg e -> do
+    x <- eval e
+    return (-x)
+  Assign name e -> do
+    x <- eval e
+    modify (insert name x)
+    return x
+  Seq e1 e2 -> do
+    eval e1
+    eval e2
+
+runEval :: Expr -> Int
+runEval e = evalState (eval e) empty
