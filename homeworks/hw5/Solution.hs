@@ -78,3 +78,33 @@ eval e = case e of
 
 runEval :: Expr -> Int
 runEval e = evalState (eval e) empty
+
+-- Task 3
+
+editDistM :: String -> String -> Int -> Int -> State (Map (Int, Int) Int) Int
+editDistM _ _ 0 j = return j -- not point in using cache here
+editDistM _ _ i 0 = return i -- not point in using cache here
+editDistM xs ys i j = do
+  cache <- get
+  let cachedDist = cache !? (i, j)
+  case cachedDist of
+    Just dist -> return dist
+    Nothing -> do
+      if xs !! (i - 1) == ys !! (j - 1)
+        then do
+          dist <- editDistM xs ys (i - 1) (j - 1)
+          modify (insert (i, j) dist)
+          return dist
+        else do
+          di <- editDistM xs ys (i - 1) j
+          dj <- editDistM xs ys i (j - 1)
+          ij <- editDistM xs ys (i - 1) (j - 1)
+          let dist = 1 + minimum [di, dj, ij]
+          modify (insert (i, j) dist)
+          return dist
+
+editDistance :: String -> String -> Int
+editDistance xs ys = evalState (editDistM xs ys i j) empty
+  where
+    i = length xs
+    j = length ys
