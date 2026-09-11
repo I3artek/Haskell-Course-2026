@@ -1,0 +1,220 @@
+module Stmts where
+
+import Control.Monad.Except (catchError, runExceptT, throwError)
+import Control.Monad.State
+import Exprs
+import Tokens (Token (..))
+
+data Stmt
+  = ExprStmt Expr
+  | FunStmt String [String] [Stmt]
+  | IfStmt Expr Stmt Stmt
+  | PrintStmt Expr
+  | ReturnStmt Expr
+  | WhileStmt Expr Stmt
+  | VarStmt String Expr
+  | BlockStmt [Stmt]
+  | NOPStmt
+  deriving (Show)
+
+-- We need to define these instances to be able to derive Eq and Ord on Value data type
+-- But they won't be used in reality, that's just a result of Function being a Value
+instance Eq Stmt where
+  _ == _ = False
+
+instance Ord Stmt where
+  _ <= _ = True
+
+consumeSemicolon :: Parser ()
+consumeSemicolon =
+  do
+    do
+      consume SEMICOLON
+    `catchError` ( \e -> case e of
+                     (ConsumeError s) -> throwError $ ConsumeError $ s ++ " after a value"
+                     other -> throwError other
+                 )
+
+statement :: Parser Stmt
+statement =
+  do
+    next <- match [IF, WHILE, FOR, PRINT, RETURN, LEFT_BRACE]
+    case next of
+      IF -> ifStatement
+      WHILE -> whileStatement
+      FOR -> forStatement
+      PRINT -> printStatement
+      RETURN -> returnStatement
+      LEFT_BRACE -> blockStatement
+      _ -> undefined
+    `ifMatchErrorDo` exprStatement
+
+forInitializer :: Parser Stmt
+forInitializer =
+  do
+    next <- match [SEMICOLON, VAR]
+    case next of
+      SEMICOLON -> return NOPStmt
+      VAR -> varDeclaration
+      _ -> error ""
+    `ifMatchErrorDo` exprStatement
+
+-- If there is no condition, we treat it as always true
+forCond :: Parser Expr
+forCond =
+  do
+    _ <- match [SEMICOLON]
+    return $ Literal $ LiteralExpr $ TRUE
+    `ifMatchErrorDo` do
+      expr <- expression
+      consumeSemicolon
+      return expr
+
+forIncrement :: Parser Expr
+forIncrement =
+  do
+    _ <- match [RIGHT_PAREN]
+    return $ Literal $ LiteralExpr $ NIL
+    `ifMatchErrorDo` do
+      expr <- expression
+      consume RIGHT_PAREN
+      return expr
+
+forStatement :: Parser Stmt
+forStatement = do
+  consume LEFT_PAREN
+  initializer <- forInitializer
+  cond <- forCond
+  incr <- forIncrement
+  body <- statement
+  let whileBody = BlockStmt [body, ExprStmt incr]
+      whileLoop = WhileStmt cond whileBody
+  return $ BlockStmt [initializer, whileLoop]
+
+whileStatement :: Parser Stmt
+whileStatement = do
+  consume LEFT_PAREN
+  cond <- expression
+  consume RIGHT_PAREN
+  body <- statement
+  return $ WhileStmt cond body
+
+ifStatement :: Parser Stmt
+ifStatement = do
+  consume LEFT_PAREN
+  cond <- expression
+  consume RIGHT_PAREN
+  thenB <- statement
+  do
+    _ <- match [ELSE]
+    elseB <- statement
+    return (IfStmt cond thenB elseB)
+    `ifMatchErrorDo` do return $ IfStmt cond thenB NOPStmt
+
+blockStatement :: Parser Stmt
+blockStatement = do
+  stmts <- block
+  consume RIGHT_BRACE
+  return $ BlockStmt stmts
+
+-- This is almost the same as program, but we keep them separate on purpose
+-- as we don't want program to stop parsing on a random "}"
+block :: Parser [Stmt]
+block = do
+  next <- peek
+  case next of
+    EOF -> return []
+    RIGHT_BRACE -> return []
+    _ -> do
+      current <- declaration
+      rest <- block
+      return (current : rest)
+
+printStatement :: Parser Stmt
+printStatement =
+  do
+    e <- expression
+    consumeSemicolon
+    return $ PrintStmt e
+
+returnStatement :: Parser Stmt
+returnStatement =
+  do
+    _ <- match [SEMICOLON]
+    return $ ReturnStmt $ Literal $ LiteralExpr NIL
+    `ifMatchErrorDo` do
+      expr <- expression
+      consumeSemicolon
+      return $ ReturnStmt expr
+
+exprStatement :: Parser Stmt
+exprStatement = do
+  expr <- expression
+  consumeSemicolon
+  return $ ExprStmt expr
+
+varDeclaration :: Parser Stmt
+varDeclaration = do
+  name <- matchAnyIdentifier
+  do
+    _ <- match [EQUAL]
+    initializer <- expression
+    consumeSemicolon
+    return $ VarStmt name initializer
+    `ifMatchErrorDo` do
+      consumeSemicolon
+      return $ VarStmt name $ Literal $ LiteralExpr NIL
+
+funParameters :: Parser [String]
+funParameters =
+  do
+    _ <- match [RIGHT_PAREN]
+    return []
+    `ifMatchErrorDo` do
+      next <- matchAnyIdentifier
+      do
+        _ <- match [COMMA]
+        rest <- funParameters
+        return $ next : rest
+        `ifMatchErrorDo` do
+          consume RIGHT_PAREN
+          return [next]
+
+funDeclaration :: Parser Stmt
+funDeclaration = do
+  name <- matchAnyIdentifier
+  consume LEFT_PAREN
+  params <- funParameters
+  consume LEFT_BRACE
+  body <- block
+  consume RIGHT_BRACE
+  return $ FunStmt name params body
+
+declaration :: Parser Stmt
+declaration =
+  do
+    decl <- match [VAR, FUN]
+    case decl of
+      VAR -> varDeclaration
+      FUN -> funDeclaration
+      _ -> throwError $ InputError "Not supported"
+    `ifMatchErrorDo` statement
+
+program :: Parser [Stmt]
+program = do
+  isEOF <- peek
+  case isEOF of
+    EOF -> return []
+    _ -> do
+      current <- declaration
+      rest <- program
+      return (current : rest)
+
+parse :: [Token] -> IO [Stmt]
+parse ts = do
+  let maybeStmts = evalState (runExceptT program) (ParserState ts)
+  case maybeStmts of
+    Left err -> do
+      print err
+      return []
+    Right stmts -> return stmts
